@@ -71,6 +71,20 @@ namespace FloatingPointCompressor.Tests
             Assert.True(compressionRatio > 1, $"Compression ratio is too low: {compressionRatio}");
         }
 
+        [Fact]
+        public void Test_Compression_Ratio_Varying_Precisions()
+        {
+            float[] values = { 1.23f, 4.56f, 7.89f, 10.12f, 15.34f };  
+            foreach (var precision in Enum.GetValues(typeof(Precision)))
+            {
+                FloatCompressor fc = new FloatCompressor(values, (Precision)precision);
+                var compressedData = fc.Compress();
+                var originalSize = values.Length * sizeof(float);
+                var compressedSize = compressedData.Length;
+                float compressionRatio = (float)originalSize / compressedSize;
+                Assert.True(compressionRatio > 1, $"Compression ratio for {precision} precision is too low: {compressionRatio}");
+            }
+        }    
 
         [Fact]
         public void Test_Error_Distributions_For_Different_Precisions()
