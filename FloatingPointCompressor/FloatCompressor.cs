@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Numerics;
 
 namespace FloatingPointCompressor
@@ -22,7 +20,7 @@ namespace FloatingPointCompressor
         public byte[] Compress()
         {
             if (_values.Length == 0) return Array.Empty<byte>();
-
+            
             int totalBits = _values.Length * _bitsPerValue;
             int totalBytes = (totalBits + 7) / 8;
             var compressedData = new byte[totalBytes];
@@ -52,8 +50,8 @@ namespace FloatingPointCompressor
 
         public float[] Decompress(byte[] compressedData)
         {
-            if (compressedData == null || compressedData.Length == 0)
-                throw new ArgumentException("Compressed data cannot be empty.", nameof(compressedData));
+            if (compressedData == null) throw new ArgumentNullException(nameof(compressedData));
+            if (compressedData.Length == 0) return Array.Empty<float>();
             var decompressedValues = new float[_values.Length];
             int bitPosition = 0;
             for (int i = 0; i + Vector<float>.Count <= _values.Length; i += Vector<float>.Count)

@@ -1,10 +1,9 @@
-﻿using BenchmarkDotNet.Running;
-using FloatingPointCompressor;
-
+﻿using FloatingPointCompressor;
 internal class Program
 {
-    private static void Main(string[] args)
-    {
+    private static async Task Main(string[] args)
+    {       
+
         // Uncomment to run benchmark.
         //var summary = BenchmarkRunner.Run<FloatCompressorBenchmark>();
 

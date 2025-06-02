@@ -134,6 +134,17 @@ namespace FloatingPointCompressor.Tests
             Assert.Equal(1.0000005f, decompressed[1], precision: 6);
         }
 
+        [Fact]
+        public void Test_Empty_Compress_Decompress()
+        {
+            float[] values = { };
+            FloatCompressor fc = new FloatCompressor(values, Precision.Millionths);
+            var compressedData = fc.Compress();
+            var decompressed = fc.Decompress(compressedData);
+            Assert.Empty(compressedData);
+            Assert.Empty(decompressed);
+        }
+
 
     }
 
