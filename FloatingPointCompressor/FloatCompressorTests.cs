@@ -31,7 +31,7 @@ namespace FloatingPointCompressor.Tests
         [MemberData(nameof(samples))]
         public void Test_Precision_With_Different_Values(float[] values, Precision precision)
         {
-            FloatCompressor fc = new FloatCompressor(values, precision);
+            FloatCompressor<float> fc = new FloatCompressor<float>(values, precision);
             var compressedData = fc.Compress();
             float[] decompressed = fc.Decompress(compressedData);
             for (int i = 0; i < values.Length; i++)
@@ -52,7 +52,7 @@ namespace FloatingPointCompressor.Tests
             {
                 values[i] = (float)(rand.NextDouble() * 100);
             }
-            FloatCompressor fc = new FloatCompressor(values, Precision.Thousandsth);
+            FloatCompressor<float> fc = new FloatCompressor<float>(values, Precision.Thousandsth);
             var compressedData = fc.Compress();
             var decompressed = fc.Decompress(compressedData);
 
@@ -64,7 +64,7 @@ namespace FloatingPointCompressor.Tests
         public void Test_Compression_Reduction()
         {
             float[] values = { 1.23f, 4.56f, 7.89f, 10.12f, 15.34f };
-            FloatCompressor fc = new FloatCompressor(values, Precision.Thousandsth);
+            FloatCompressor<float> fc = new FloatCompressor<float>(values, Precision.Thousandsth);
             var compressedData = fc.Compress();
             var originalSize = values.Length * sizeof(float);
             float compressionRatio = (float)originalSize / compressedData.Length;
@@ -77,7 +77,7 @@ namespace FloatingPointCompressor.Tests
             float[] values = { 1.23f, 4.56f, 7.89f, 10.12f, 15.34f };  
             foreach (var precision in Enum.GetValues(typeof(Precision)))
             {
-                FloatCompressor fc = new FloatCompressor(values, (Precision)precision);
+                FloatCompressor<float> fc = new FloatCompressor<float>(values, (Precision)precision);
                 var compressedData = fc.Compress();
                 var originalSize = values.Length * sizeof(float);
                 var compressedSize = compressedData.Length;
@@ -90,10 +90,10 @@ namespace FloatingPointCompressor.Tests
         public void Test_Error_Distributions_For_Different_Precisions()
         {
             float[] values = { 1.123456f, 2.654321f, 3.987654f, 4.000001f };
-            FloatCompressor fcHigh = new FloatCompressor(values, Precision.Millionths);
+            FloatCompressor<float> fcHigh = new FloatCompressor<float>(values, Precision.Millionths);
             var compressedHigh = fcHigh.Compress();
             float[] decompressedHigh = fcHigh.Decompress(compressedHigh);
-            FloatCompressor fcLow = new FloatCompressor(values, Precision.Tenths);
+            FloatCompressor<float> fcLow = new FloatCompressor<float>(values, Precision.Tenths);
             var compressedLow = fcLow.Compress();
             float[] decompressedLow = fcLow.Decompress(compressedLow);
             for (int i = 0; i < values.Length; i++)
@@ -114,8 +114,8 @@ namespace FloatingPointCompressor.Tests
         public void Test_Varying_Precision_Compresses()
         {
             var values = new float[] { 123.456f, 1.9f };
-            FloatCompressor fc10s = new FloatCompressor(values, Precision.Tenths);
-            FloatCompressor fc100s = new FloatCompressor(values, Precision.Hundredths);
+            FloatCompressor<float> fc10s = new FloatCompressor<float>(values, Precision.Tenths);
+            FloatCompressor<float> fc100s = new FloatCompressor<float>(values, Precision.Hundredths);
             var compressedData10s = fc10s.Compress();
             var compressedData100s = fc100s.Compress();
             Assert.NotEmpty(compressedData10s);
@@ -127,7 +127,7 @@ namespace FloatingPointCompressor.Tests
         public void Test_Edge_Case_Precision()
         {
             float[] values = { 1.00000049f, 1.00000051f };
-            FloatCompressor fc = new FloatCompressor(values, Precision.Millionths);
+            FloatCompressor<float> fc = new FloatCompressor<float>(values, Precision.Millionths);
             var compressedData = fc.Compress();
             var decompressed = fc.Decompress(compressedData);
             Assert.Equal(1.0000005f, decompressed[0], precision: 6);
@@ -138,7 +138,7 @@ namespace FloatingPointCompressor.Tests
         public void Test_Empty_Compress_Decompress()
         {
             float[] values = { };
-            FloatCompressor fc = new FloatCompressor(values, Precision.Millionths);
+            FloatCompressor<float> fc = new FloatCompressor<float>(values, Precision.Millionths);
             var compressedData = fc.Compress();
             var decompressed = fc.Decompress(compressedData);
             Assert.Empty(compressedData);

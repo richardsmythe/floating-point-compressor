@@ -26,14 +26,14 @@ namespace FloatingPointCompressor
         [Benchmark]
         public byte[] CompressBenchmark()
         {
-            FloatCompressor fc = new FloatCompressor(_values, _precision);
+            FloatCompressor<float> fc = new FloatCompressor<float>(_values, _precision);
             return fc.Compress();
         }
 
         [Benchmark]
         public float[] DecompressBenchmark()
         {
-            FloatCompressor fc = new FloatCompressor(_values, _precision);
+            FloatCompressor<float> fc = new FloatCompressor<float>(_values, _precision);
             var compressedData = fc.Compress();
             return fc.Decompress(compressedData);
         }

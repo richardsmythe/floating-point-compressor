@@ -3,13 +3,13 @@ using System.Numerics;
 
 namespace FloatingPointCompressor
 {
-    public class FloatCompressor
+    public class FloatCompressor<T> where T: IFloatingPointIeee754<T>
     {
-        private readonly float[] _values;
+        private readonly T[] _values;
         private readonly int _scale;
         private readonly int _bitsPerValue;
 
-        public FloatCompressor(float[] values, Precision precision)
+        public FloatCompressor(T[] values, Precision precision)
         {
             if (values == null) throw new ArgumentNullException(nameof(values));
             _values = values;
@@ -26,63 +26,66 @@ namespace FloatingPointCompressor
             var compressedData = new byte[totalBytes];
             int bitPosition = 0;
 
-            for (int i = 0; i + Vector<float>.Count <= _values.Length; i += Vector<float>.Count)
+            var scaleT = T.CreateChecked(_scale);
+            var scaleVector = Vector<T>.One * scaleT;
+            for (int i = 0; i + Vector<T>.Count <= _values.Length; i += Vector<T>.Count)
             {
-                var vector = new Vector<float>(_values, i);
-                var scaledVector = vector * new Vector<float>(_scale);
-                var scaledArray = new float[Vector<float>.Count];
+                var vector = new Vector<T>(_values, i);
+                var scaledVector = vector * scaleVector;
+                var scaledArray = new T[Vector<T>.Count];
                 scaledVector.CopyTo(scaledArray);
-                for (int j = 0; j < Vector<float>.Count; j++)
+                for (int j = 0; j < Vector<T>.Count; j++)
                 {
-                    int scaledValue = (int)Math.Round(scaledArray[j]);
+                    int scaledValue = int.CreateChecked(T.Round(scaledArray[j]));
                     PackBits(scaledValue, ref bitPosition, compressedData);
                 }
             }
             // makes sure all values fit into vector
-            for (int i = _values.Length - (_values.Length % Vector<float>.Count); i < _values.Length; i++)
+            for (int i = _values.Length - (_values.Length % Vector<T>.Count); i < _values.Length; i++)
             {
-                int scaledValue = (int)Math.Round(_values[i] * _scale);
+                var scaled = _values[i] * scaleT;
+                int scaledValue = int.CreateChecked(T.Round(scaled));
                 PackBits(scaledValue, ref bitPosition, compressedData);
             }
 
             return compressedData;
         }
 
-        public float[] Decompress(byte[] compressedData)
+        public T[] Decompress(byte[] compressedData)
         {
             if (compressedData == null) throw new ArgumentNullException(nameof(compressedData));
-            if (compressedData.Length == 0) return Array.Empty<float>();
-            var decompressedValues = new float[_values.Length];
+            if (compressedData.Length == 0) return Array.Empty<T>();
+            var decompressedValues = new T[_values.Length];
             int bitPosition = 0;
-            for (int i = 0; i + Vector<float>.Count <= _values.Length; i += Vector<float>.Count)
+            var scaleT = T.CreateChecked(_scale);
+            for (int i = 0; i + Vector<T>.Count <= _values.Length; i += Vector<T>.Count)
             {
-                var tmpArr = new float[Vector<float>.Count];
-                for (int j = 0; j < Vector<float>.Count; j++)
+                var tmpArr = new T[Vector<T>.Count];
+                for (int j = 0; j < Vector<T>.Count; j++)
                 {
                     int scaledValue = UnpackBits(ref bitPosition, compressedData);
-                    tmpArr[j] = scaledValue / (float)_scale;
+                    tmpArr[j] = T.CreateChecked(scaledValue) / scaleT;
                 }
-                for (int j = 0; j < Vector<float>.Count; j++)
+                for (int j = 0; j < Vector<T>.Count; j++)
                 {
                     decompressedValues[i + j] = tmpArr[j];
                 }
             }
             // remaing values that didnt fit in vector
-            for (int i = _values.Length - (_values.Length % Vector<float>.Count); i < _values.Length; i++)
+            for (int i = _values.Length - (_values.Length % Vector<T>.Count); i < _values.Length; i++)
             {
                 int scaledValue = UnpackBits(ref bitPosition, compressedData);
-                decompressedValues[i] = scaledValue / (float)_scale;
+                decompressedValues[i] = T.CreateChecked(scaledValue) / scaleT;
             }
 
             return decompressedValues;
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int CalculateBitsPerValue()
         {
-            float maxAbsValue = _values.Length == 0 ? 0 : _values.Max(v => Math.Abs(v));
-            int maxScaledValue = (int)Math.Ceiling(maxAbsValue * _scale);
+            T maxAbsValue = _values.Length == 0 ? T.Zero : _values.Max(v => T.Abs(v));
+            int maxScaledValue = int.CreateChecked(T.Ceiling(maxAbsValue * T.CreateChecked(_scale)));
             return (int)Math.Ceiling(Math.Log2(maxScaledValue + 1)) + 1;
         }
 

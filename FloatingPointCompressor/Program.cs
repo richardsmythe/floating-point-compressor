@@ -14,7 +14,7 @@ internal class Program
         Precision precision = Precision.TenThousandths;
         Console.WriteLine($"Compressing to {precision} precision.");
 
-        FloatCompressor fc = new FloatCompressor(valuesToCompress, precision);
+        FloatCompressor<float> fc = new FloatCompressor<float>(valuesToCompress, precision);
         byte[] compressedData = fc.Compress();
         float[] decompressedValues = fc.Decompress(compressedData);
 
