@@ -6,14 +6,17 @@ namespace FloatingPointCompressor
     public class FloatCompressor<T> where T: IFloatingPointIeee754<T>
     {
         private readonly T[] _values;
-        private readonly int _scale;
+        private readonly long _scale; // changed from double to long
         private readonly int _bitsPerValue;
 
         public FloatCompressor(T[] values, Precision precision)
         {
             if (values == null) throw new ArgumentNullException(nameof(values));
             _values = values;
-            _scale = (int)precision;
+            double scaleDouble = 1.0 / precision.Value;
+            if (scaleDouble > long.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(precision), $"Precision value too small, scale overflows long: {scaleDouble}");
+            _scale = (long)Math.Round(scaleDouble);
             _bitsPerValue = CalculateBitsPerValue();
         }
 
@@ -36,15 +39,18 @@ namespace FloatingPointCompressor
                 scaledVector.CopyTo(scaledArray);
                 for (int j = 0; j < Vector<T>.Count; j++)
                 {
-                    int scaledValue = int.CreateChecked(T.Round(scaledArray[j]));
+                    double scaled = double.CreateChecked(T.Round(scaledArray[j]));
+                    double clamped = Math.Max(Math.Min(scaled, long.MaxValue), long.MinValue);
+                    long scaledValue = (long)clamped;
                     PackBits(scaledValue, ref bitPosition, compressedData);
                 }
             }
             // makes sure all values fit into vector
             for (int i = _values.Length - (_values.Length % Vector<T>.Count); i < _values.Length; i++)
             {
-                var scaled = _values[i] * scaleT;
-                int scaledValue = int.CreateChecked(T.Round(scaled));
+                double scaled = double.CreateChecked(T.Round(_values[i] * scaleT));
+                double clamped = Math.Max(Math.Min(scaled, long.MaxValue), long.MinValue);
+                long scaledValue = (long)clamped;
                 PackBits(scaledValue, ref bitPosition, compressedData);
             }
 
@@ -63,7 +69,7 @@ namespace FloatingPointCompressor
                 var tmpArr = new T[Vector<T>.Count];
                 for (int j = 0; j < Vector<T>.Count; j++)
                 {
-                    int scaledValue = UnpackBits(ref bitPosition, compressedData);
+                    long scaledValue = UnpackBits(ref bitPosition, compressedData);
                     tmpArr[j] = T.CreateChecked(scaledValue) / scaleT;
                 }
                 for (int j = 0; j < Vector<T>.Count; j++)
@@ -74,7 +80,7 @@ namespace FloatingPointCompressor
             // remaing values that didnt fit in vector
             for (int i = _values.Length - (_values.Length % Vector<T>.Count); i < _values.Length; i++)
             {
-                int scaledValue = UnpackBits(ref bitPosition, compressedData);
+                long scaledValue = UnpackBits(ref bitPosition, compressedData);
                 decompressedValues[i] = T.CreateChecked(scaledValue) / scaleT;
             }
 
@@ -85,32 +91,35 @@ namespace FloatingPointCompressor
         private int CalculateBitsPerValue()
         {
             T maxAbsValue = _values.Length == 0 ? T.Zero : _values.Max(v => T.Abs(v));
-            int maxScaledValue = int.CreateChecked(T.Ceiling(maxAbsValue * T.CreateChecked(_scale)));
+            // Compute scaled value as double to check for overflow
+            double scaled = double.CreateChecked(maxAbsValue) * _scale;
+            double clamped = Math.Min(Math.Abs(scaled), long.MaxValue);
+            long maxScaledValue = (long)Math.Ceiling(clamped);
             return (int)Math.Ceiling(Math.Log2(maxScaledValue + 1)) + 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void PackBits(int value, ref int bitPosition, byte[] buffer)
+        private void PackBits(long value, ref int bitPosition, byte[] buffer)
         {
             bool isNegative = value < 0;
-            int absoluteValue = isNegative ? ~value : value;
+            long absoluteValue = isNegative ? ~value : value;
             for (int i = 0; i < _bitsPerValue - 1; i++)
             {
-                WriteBit(buffer, bitPosition++, (absoluteValue & (1 << i)) != 0);
+                WriteBit(buffer, bitPosition++, (absoluteValue & (1L << i)) != 0);
             }
             WriteBit(buffer, bitPosition++, isNegative);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int UnpackBits(ref int bitPosition, byte[] buffer)
+        private long UnpackBits(ref int bitPosition, byte[] buffer)
         {
-            int value = 0;
+            long value = 0;
 
             for (int i = 0; i < _bitsPerValue - 1; i++)
             {
                 if (ReadBit(buffer, bitPosition++))
                 {
-                    value |= 1 << i;
+                    value |= 1L << i;
                 }
             }
             if (ReadBit(buffer, bitPosition++))
