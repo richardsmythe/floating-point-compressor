@@ -10,7 +10,6 @@ internal class Program
         // Uncomment to run benchmark.
         // var summary = BenchmarkRunner.Run<FloatCompressorBenchmark>();
 
-        // Use a sample without extreme outliers for correct compression
         float[] scientificFloatValues = {
             5.54500008f,
             -7.55112505f,
@@ -34,10 +33,8 @@ internal class Program
             299792.469
         };
 
-        // Only include precisions down to millionths (1e-6)
         var precisions = PrecisionExtensions.AllPrecisions;
-            //.Where(p => p.Value >= 1e-6)
-            //.ToArray();
+
 
         // FLOAT TESTS
         Console.WriteLine("\n[float] Original values:");
@@ -55,9 +52,7 @@ internal class Program
             for (int i = 0; i < scientificFloatValues.Length; i++)
                 errors[i] = decompressed[i] - scientificFloatValues[i];
 
-            float meanError = errors.Average();
-            float meanAbsError = errors.Select(Math.Abs).Average();
-            float maxError = errors.Max(Math.Abs);
+            float meanError = errors.Average();         
             int originalSize = scientificFloatValues.Length * sizeof(float);
             int compressedSize = compressed.Length;
             float ratio = compressedSize == 0 ? 0 : (float)originalSize / compressedSize;
@@ -65,8 +60,7 @@ internal class Program
             Console.WriteLine($"\n--- [float] Precision: {name} ---");
             Console.WriteLine($"Compression Ratio: {ratio:F2}");
             Console.WriteLine($"Mean Error: {meanError:E}");
-            //Console.WriteLine($"Mean Absolute Error: {meanAbsError:E}");
-            //Console.WriteLine($"Maximum Error: {maxError:E}");
+
             Console.WriteLine("Decompressed values:");
             for (int i = 0; i < scientificFloatValues.Length; i++)
             {
@@ -90,9 +84,7 @@ internal class Program
             for (int i = 0; i < scientificDoubleValues.Length; i++)
                 errors[i] = decompressed[i] - scientificDoubleValues[i];
 
-            double meanError = errors.Average();
-            double meanAbsError = errors.Select(Math.Abs).Average();
-            double maxError = errors.Max(Math.Abs);
+            double meanError = errors.Average();          
             int originalSize = scientificDoubleValues.Length * sizeof(double);
             int compressedSize = compressed.Length;
             double ratio = compressedSize == 0 ? 0 : (double)originalSize / compressedSize;
@@ -100,8 +92,7 @@ internal class Program
             Console.WriteLine($"\n--- [double] Precision: {name} ---");
             Console.WriteLine($"Compression Ratio: {ratio:F2}");
             Console.WriteLine($"Mean Error: {meanError:E}");
-            //Console.WriteLine($"Mean Absolute Error: {meanAbsError:E}");
-            //Console.WriteLine($"Maximum Error: {maxError:E}");
+
             Console.WriteLine("Decompressed values:");
             for (int i = 0; i < scientificDoubleValues.Length; i++)
             {
